@@ -1,0 +1,53 @@
+package com.grievance.security;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.grievance.entity.Citizen;
+import com.grievance.entity.Employee;
+import com.grievance.repository.CitizenRepository;
+import com.grievance.repository.EmployeeRepository;
+
+import java.util.*;
+
+@Service(value = "userService")
+public class MyUserDetailsService implements UserDetailsService{
+	
+	@Autowired
+	private CitizenRepository cr;
+	@Autowired
+	private EmployeeRepository er;
+
+	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+		Citizen citizen = cr.findByEmail(email);
+		if(citizen == null){
+			Employee employee = er.findByEmail(email);
+			if( employee == null ) {
+				throw new UsernameNotFoundException("Invalid username or password.");
+			}
+		//	return new org.springframework.security.core.userdetails.User(employee.getEmail(), employee.getPassword() ,employee.isActived(),true,true,true,getAuthority(employee));
+		return new org.springframework.security.core.userdetails.User(employee.getEmail(), employee.getPassword() ,getAuthority(employee));
+		}
+		// return new org.springframework.security.core.userdetails.User(citizen.getEmail(), citizen.getPassword(),citizen.isActived(),true,true,true,getAuthority(citizen));
+		 return new org.springframework.security.core.userdetails.User(citizen.getEmail(), citizen.getPassword(),getAuthority(citizen));
+	}
+
+	private Set<SimpleGrantedAuthority> getAuthority(Citizen citizen) {
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+		
+            authorities.add(new SimpleGrantedAuthority(""+citizen.getRole()));
+		
+		return authorities;
+	}   
+	private Set<SimpleGrantedAuthority> getAuthority(Employee employee) {
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        authorities.add(new SimpleGrantedAuthority(""+employee.getRole()));
+
+		return authorities;
+	}  
+}
